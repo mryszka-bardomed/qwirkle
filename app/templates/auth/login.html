@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Logowanie{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Logowanie</h1>
+  <form method="post">
+    {{ form.hidden_tag() }}
+    {{ field(form.username, autofocus=true, autocomplete="username") }}
+    {{ field(form.password, autocomplete="current-password") }}
+    <button class="primary">Zaloguj</button>
+  </form>
+  <p class="muted">Nie masz konta? <a href="{{ url_for('auth.register') }}">Zarejestruj się</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% macro field(f) %}
+  <label>
+    {{ f.label.text }}
+    {{ f(**kwargs) }}
+    {% for err in f.errors %}<small class="error">{{ err }}</small>{% endfor %}
+  </label>
+{% endmacro %}

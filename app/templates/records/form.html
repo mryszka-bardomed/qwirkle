@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}{{ "Edycja rekordu" if record else "Nowy rekord" }}{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>{{ "Edycja rekordu" if record else "Nowy rekord" }}</h1>
+  <form method="post">
+    {{ form.hidden_tag() }}
+    {{ field(form.name, autofocus=true) }}
+    <div class="row">
+      {{ field(form.category, list="categories") }}
+      {{ field(form.date) }}
+    </div>
+    {{ field(form.description, rows=5) }}
+    <div class="actions">
+      <button class="primary">Zapisz</button>
+      <a class="button" href="{{ url_for('records.list_records') }}">Anuluj</a>
+    </div>
+  </form>
+  {% if record %}
+    <p class="muted small">
+      Utworzono: {{ record.created_at.strftime('%Y-%m-%d %H:%M') }}
+      {% if record.created_by %}przez {{ record.created_by.username }}{% endif %}
+      · Zmieniono: {{ record.updated_at.strftime('%Y-%m-%d %H:%M') }}
+    </p>
+  {% endif %}
+</section>
+{% endblock %}
