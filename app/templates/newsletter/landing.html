@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zapisz się na newsletter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 to-white min-h-screen font-sans text-slate-800">
+
+  <!-- Pasek nawigacji -->
+  <nav class="container mx-auto px-6 py-4 flex justify-between items-center max-w-5xl">
+    <span class="font-bold text-xl text-indigo-700">Qwirkle</span>
+    <div class="flex gap-4 text-sm">
+      {% if current_user.is_authenticated %}
+        {% if current_user.is_admin %}
+          <a href="{{ url_for('admin.subscribers') }}" class="text-indigo-600 hover:underline">Panel admina</a>
+        {% else %}
+          <a href="{{ url_for('records.list_records') }}" class="text-indigo-600 hover:underline">Rekordy</a>
+        {% endif %}
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="text-indigo-600 hover:underline">Zaloguj</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="container mx-auto px-6 py-20 max-w-5xl text-center">
+    <span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">Bezpłatny newsletter</span>
+    <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight mb-6">
+      Praktyczna wiedza,<br class="hidden sm:block"> którą możesz zastosować od razu
+    </h1>
+    <p class="text-lg text-slate-500 max-w-2xl mx-auto mb-10">
+      Co tydzień jeden artykuł: konkretna wskazówka, analiza albo narzędzie. Zero spamu. Wypisanie się jednym kliknięciem.
+    </p>
+    <a href="#zapisz" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-3 rounded-xl shadow-md transition">
+      Dołącz bezpłatnie →
+    </a>
+  </header>
+
+  <!-- Korzyści -->
+  <section class="container mx-auto px-6 pb-20 max-w-5xl grid sm:grid-cols-3 gap-8 text-center">
+    {% for icon, title, body in [
+        ("📬", "Co tydzień", "Jedno wydanie, skrzynka nieprzepełniona."),
+        ("🔒", "Bez spamu", "Twój adres nigdy nie trafi do osób trzecich."),
+        ("🚀", "Od razu do działania", "Każdy artykuł kończy się konkretnym krokiem."),
+    ] %}
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+      <div class="text-4xl mb-3">{{ icon }}</div>
+      <h3 class="font-bold text-lg mb-1">{{ title }}</h3>
+      <p class="text-slate-500 text-sm">{{ body }}</p>
+    </div>
+    {% endfor %}
+  </section>
+
+  <!-- Formularz zapisu -->
+  <section id="zapisz" class="container mx-auto px-6 pb-24 max-w-lg">
+    <!-- Komunikaty flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div id="flash-{{ loop.index }}" role="alert"
+             class="mb-6 px-4 py-3 rounded-xl text-sm font-medium
+                    {{ 'bg-green-100 text-green-800' if cat == 'success' else 'bg-red-100 text-red-800' }}">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endwith %}
+    <!-- Komunikat AJAX -->
+    <div id="form-msg" role="status" class="hidden mb-6 px-4 py-3 rounded-xl text-sm font-medium"></div>
+
+    <div class="bg-white rounded-2xl shadow-lg p-8">
+      <h2 class="text-2xl font-bold mb-6 text-center">Zapisz się bezpłatnie</h2>
+      <form id="subscribe-form" method="post" action="{{ url_for('newsletter.subscribe') }}"
+            novalidate class="space-y-4">
+        {{ form_csrf() }}
+        <!-- Pułapka na boty (pole ukryte przez CSS, nie przez type=hidden) -->
+        <div class="absolute -left-full" aria-hidden="true">
+          <label for="website">Zostaw puste</label>
+          <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" for="email">
+            Adres e-mail <span class="text-red-500">*</span>
+          </label>
+          <input id="email" name="email" type="email" required autocomplete="email"
+                 placeholder="ty@przykład.pl"
+                 class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                        focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" for="name">Imię (opcjonalne)</label>
+          <input id="name" name="name" type="text" autocomplete="given-name"
+                 placeholder="np. Marta"
+                 class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                        focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" for="industry">Branża (opcjonalne)</label>
+          <select id="industry" name="industry"
+                  class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+            <option value="">Wybierz…</option>
+            {% for ind in industries %}
+              <option value="{{ ind }}">{{ ind }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="flex gap-3">
+          <input id="consent" name="consent" type="checkbox" required
+                 class="mt-0.5 h-4 w-4 accent-indigo-600 flex-shrink-0 rounded">
+          <label for="consent" class="text-xs text-slate-500 leading-snug">
+            Wyrażam zgodę na przetwarzanie podanego adresu e-mail w celu wysyłki newslettera.
+            Wiem, że mam prawo wycofać zgodę w dowolnym momencie.
+          </label>
+        </div>
+
+        <button type="submit" id="submit-btn"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold
+                       py-3 rounded-xl transition disabled:opacity-60">
+          Zapisz mnie →
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <footer class="text-center text-xs text-slate-400 pb-8">
+    © {{ now.year }} Qwirkle · Wszelkie prawa zastrzeżone
+  </footer>
+
+  <script>
+  (function () {
+    const form = document.getElementById("subscribe-form");
+    const msg  = document.getElementById("form-msg");
+    const btn  = document.getElementById("submit-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      msg.className = "hidden mb-6 px-4 py-3 rounded-xl text-sm font-medium";
+
+      const body = new URLSearchParams(new FormData(form)).toString();
+      try {
+        const res  = await fetch(form.action, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.ok) {
+          msg.textContent = data.message || "Dziękujemy!";
+          msg.className = "mb-6 px-4 py-3 rounded-xl text-sm font-medium bg-green-100 text-green-800";
+          form.reset();
+        } else {
+          const errors = (data.errors || ["Coś poszło nie tak."]).join(" ");
+          msg.textContent = errors;
+          msg.className = "mb-6 px-4 py-3 rounded-xl text-sm font-medium bg-red-100 text-red-800";
+        }
+      } catch {
+        msg.textContent = "Błąd sieci. Spróbuj ponownie.";
+        msg.className = "mb-6 px-4 py-3 rounded-xl text-sm font-medium bg-red-100 text-red-800";
+      } finally {
+        btn.disabled = false;
+        msg.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

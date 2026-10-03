@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Subskrybenci{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1>Subskrybenci <span class="muted">({{ pagination.total }})</span></h1>
+  <div class="actions">
+    <a class="button" href="{{ url_for('admin.export_subscribers', **request.args.to_dict()) }}">Eksport CSV</a>
+  </div>
+</div>
+
+<form class="filters" method="get">
+  <input type="search" name="q" placeholder="Szukaj w e-mailu i imieniu…" value="{{ request.args.get('q', '') }}">
+  <button>Filtruj</button>
+  {% if request.args.get('q') %}
+    <a href="{{ url_for('admin.subscribers') }}">Wyczyść</a>
+  {% endif %}
+</form>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, message in messages %}
+    <div class="flash flash-{{ cat }}">{{ message }}</div>
+  {% endfor %}
+{% endwith %}
+
+{% if pagination.items %}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Imię</th>
+      <th>E-mail</th>
+      <th>Branża</th>
+      <th>Data zapisu</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in pagination.items %}
+    <tr>
+      <td class="muted small">{{ s.id }}</td>
+      <td>{{ s.name or '—' }}</td>
+      <td><a href="mailto:{{ s.email }}">{{ s.email }}</a></td>
+      <td>{{ s.industry or '—' }}</td>
+      <td class="nowrap muted small">{{ s.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td class="nowrap">
+        <form method="post" action="{{ url_for('admin.delete_subscriber', subscriber_id=s.id) }}"
+              class="inline" onsubmit='return confirm({{ ("Usunąć " ~ s.email ~ "?")|tojson }});'>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="link danger">Usuń</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="pager">
+  {% if pagination.has_prev %}
+    <a class="button" href="{{ url_for('admin.subscribers', page=pagination.prev_num, **request.args.to_dict()) }}">← Poprzednia</a>
+  {% endif %}
+  <span class="muted">Strona {{ pagination.page }} z {{ pagination.pages }}</span>
+  {% if pagination.has_next %}
+    <a class="button" href="{{ url_for('admin.subscribers', page=pagination.next_num, **request.args.to_dict()) }}">Następna →</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% else %}
+  <p class="empty muted">Brak subskrybentów{% if request.args.get('q') %} dla tego zapytania{% endif %}.</p>
+{% endif %}
+{% endblock %}

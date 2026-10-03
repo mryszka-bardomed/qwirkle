@@ -14,6 +14,8 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    # Tylko administratorzy widzą panel subskrybentów (nadawane komendą `flask create-admin`).
+    is_admin = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
     created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
 
     def set_password(self, password):
@@ -35,3 +37,15 @@ class Record(db.Model):
     )
     created_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     created_by = db.relationship("User")
+
+
+class Subscriber(db.Model):
+    """Osoba zapisana na newsletter przez formularz na stronie głównej."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(254), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(100), default="")
+    industry = db.Column(db.String(100), default="")
+    # Moment wyrażenia zgody na przetwarzanie danych (wymóg RODO).
+    consent_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)

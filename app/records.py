@@ -1,10 +1,8 @@
-import csv
-import io
-
-from flask import Blueprint, Response, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from . import db
+from .csv_export import csv_response
 from .forms import RecordForm
 from .models import Record
 
@@ -83,11 +81,8 @@ def delete_record(record_id):
 @bp.route("/export.csv")
 @login_required
 def export_csv():
-    buf = io.StringIO()
-    writer = csv.writer(buf, delimiter=";")
-    writer.writerow(["id", "nazwa", "kategoria", "data", "opis", "autor", "zmieniono"])
-    for r in _filtered_query():
-        writer.writerow([
+    rows = (
+        (
             r.id,
             r.name,
             r.category or "",
@@ -95,10 +90,9 @@ def export_csv():
             r.description or "",
             r.created_by.username if r.created_by else "",
             r.updated_at.strftime("%Y-%m-%d %H:%M"),
-        ])
-    # BOM so Excel opens Polish characters correctly.
-    return Response(
-        "﻿" + buf.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=rekordy.csv"},
+        )
+        for r in _filtered_query()
+    )
+    return csv_response(
+        ["id", "nazwa", "kategoria", "data", "opis", "autor", "zmieniono"], rows, "rekordy.csv"
     )
