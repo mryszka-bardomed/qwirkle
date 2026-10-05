@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Rekordy{% endblock %}
+
+{% block content %}
+{% macro sort_link(key, label) -%}
+  {%- set active = request.args.get('sort', 'updated') == key -%}
+  {%- set order = 'asc' if active and request.args.get('order', 'desc') == 'desc' else 'desc' -%}
+  {%- set args = request.args.to_dict() -%}
+  {%- set _ = args.update(sort=key, order=order, page=1) -%}
+  <a href="{{ url_for('records.list_records', **args) }}">{{ label }}{% if active %} {{ '↑' if request.args.get('order') == 'asc' else '↓' }}{% endif %}</a>
+{%- endmacro %}
+
+{% macro page_link(p, label) -%}
+  {%- set args = request.args.to_dict() -%}
+  {%- set _ = args.update(page=p) -%}
+  <a class="button" href="{{ url_for('records.list_records', **args) }}">{{ label }}</a>
+{%- endmacro %}
+
+<div class="toolbar">
+  <h1>Rekordy <span class="muted">({{ pagination.total }})</span></h1>
+  <div class="actions">
+    <a class="button" href="{{ url_for('records.export_csv', **request.args.to_dict()) }}">Eksport CSV</a>
+    <a class="button primary" href="{{ url_for('records.create_record') }}">+ Nowy rekord</a>
+  </div>
+</div>
+
+<form class="filters" method="get">
+  <input type="search" name="q" placeholder="Szukaj w nazwie i opisie…" value="{{ request.args.get('q', '') }}">
+  <select name="category">
+    <option value="">Wszystkie kategorie</option>
+    {% for c in categories %}
+      <option value="{{ c }}" {{ 'selected' if request.args.get('category') == c }}>{{ c }}</option>
+    {% endfor %}
+  </select>
+  <button>Filtruj</button>
+  {% if request.args.get('q') or request.args.get('category') %}
+    <a href="{{ url_for('records.list_records') }}">Wyczyść</a>
+  {% endif %}
+</form>
+
+{% if pagination.items %}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>{{ sort_link('name', 'Nazwa') }}</th>
+      <th>{{ sort_link('category', 'Kategoria') }}</th>
+      <th>{{ sort_link('date', 'Data') }}</th>
+      <th>{{ sort_link('updated', 'Zmieniono') }}</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in pagination.items %}
+    <tr>
+      <td>
+        <a href="{{ url_for('records.edit_record', record_id=r.id) }}"><strong>{{ r.name }}</strong></a>
+        {% if r.description %}<div class="muted small clamp">{{ r.description }}</div>{% endif %}
+      </td>
+      <td>{% if r.category %}<span class="tag">{{ r.category }}</span>{% endif %}</td>
+      <td class="nowrap">{{ r.date.isoformat() if r.date else '' }}</td>
+      <td class="nowrap muted">{{ r.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td class="nowrap">
+        <a href="{{ url_for('records.edit_record', record_id=r.id) }}">Edytuj</a>
+        <form method="post" action="{{ url_for('records.delete_record', record_id=r.id) }}" class="inline"
+              onsubmit='return confirm({{ ("Usunąć rekord „" ~ r.name ~ "”?")|tojson }});'>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="link danger">Usuń</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="pager">
+  {% if pagination.has_prev %}{{ page_link(pagination.prev_num, '← Poprzednia') }}{% endif %}
+  <span class="muted">Strona {{ pagination.page }} z {{ pagination.pages }}</span>
+  {% if pagination.has_next %}{{ page_link(pagination.next_num, 'Następna →') }}{% endif %}
+</nav>
+{% endif %}
+{% else %}
+  <p class="empty muted">Brak rekordów. <a href="{{ url_for('records.create_record') }}">Dodaj pierwszy.</a></p>
+{% endif %}
+{% endblock %}
